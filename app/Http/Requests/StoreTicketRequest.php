@@ -30,21 +30,18 @@ class StoreTicketRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     */
     public function messages(): array
     {
         return [
-            'title.required' => 'O título do ticket é obrigatório.',
-            'title.min' => 'O título deve ter pelo menos 5 caracteres.',
-            'title.max' => 'O título não pode exceder 255 caracteres.',
-            'description.required' => 'A descrição do ticket é obrigatória.',
-            'description.min' => 'A descrição deve ter pelo menos 10 caracteres.',
-            'description.max' => 'A descrição não pode exceder 5000 caracteres.',
-            'category.max' => 'A categoria não pode exceder 100 caracteres.',
-            'sentiment.in' => 'O sentimento deve ser: positive, negative ou neutral.',
-            'status.in' => 'O status deve ser: open, closed ou pending.',
+            'title.required' => 'The title field is required.',
+            'title.min' => 'The title must be at least 5 characters.',
+            'title.max' => 'The title may not be greater than 255 characters.',
+            'description.required' => 'The description field is required.',
+            'description.min' => 'The description must be at least 10 characters.',
+            'description.max' => 'The description may not be greater than 5000 characters.',
+            'category.max' => 'The category may not be greater than 100 characters.',
+            'sentiment.in' => 'The selected sentiment is invalid.',
+            'status.in' => 'The selected status is invalid.',
         ];
     }
 }

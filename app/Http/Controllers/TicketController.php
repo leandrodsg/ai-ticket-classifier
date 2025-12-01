@@ -17,7 +17,6 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
-        // Filtros
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
@@ -57,11 +56,8 @@ class TicketController extends Controller
     {
         $ticket = Ticket::create($request->validated());
 
-        // Aqui será implementada a classificação automática com IA na Sprint 3
-        // Por enquanto, apenas criamos o ticket
-
         return redirect()->route('tickets.show', $ticket)
-                        ->with('success', 'Ticket criado com sucesso!');
+                        ->with('success', 'Ticket created successfully!');
     }
 
     /**
@@ -88,17 +84,14 @@ class TicketController extends Controller
         $ticket->update($request->validated());
 
         return redirect()->route('tickets.show', $ticket)
-                        ->with('success', 'Ticket atualizado com sucesso!');
+                        ->with('success', 'Ticket updated successfully!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Ticket $ticket): RedirectResponse
     {
         $ticket->delete();
 
         return redirect()->route('tickets.index')
-                        ->with('success', 'Ticket removido com sucesso!');
+                        ->with('success', 'Ticket deleted successfully!');
     }
 }
