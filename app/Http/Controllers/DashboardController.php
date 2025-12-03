@@ -16,7 +16,7 @@ class DashboardController extends Controller
      * @param Request $request
      * @return View
      */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         try {
             // Redis cache for 5 minutes to improve performance
@@ -43,6 +43,11 @@ class DashboardController extends Controller
 
             Log::info('Dashboard cache hit', ['cache_key' => $cacheKey]);
 
+            // Return JSON for API requests, view for web requests
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json($stats);
+            }
+
             return view('dashboard.index', $stats);
 
         } catch (\Exception $e) {
@@ -52,12 +57,18 @@ class DashboardController extends Controller
             ]);
 
             // Fallback with basic data if cache/database fails
-            return view('dashboard.index', [
+            $fallbackData = [
                 'totalTickets' => 0,
                 'ticketsByCategory' => collect(),
                 'ticketsBySentiment' => collect(),
                 'ticketsByStatus' => collect(),
-            ]);
+            ];
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json($fallbackData, 500);
+            }
+
+            return view('dashboard.index', $fallbackData);
         }
     }
 }

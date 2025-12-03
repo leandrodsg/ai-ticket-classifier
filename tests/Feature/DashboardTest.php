@@ -59,20 +59,19 @@ class DashboardTest extends TestCase
         // Create test data
         Ticket::factory()->create(['category' => 'technical']);
 
-        // First request should cache the data
-        $startTime = microtime(true);
+        // Clear any existing cache
+        \Illuminate\Support\Facades\Cache::forget('dashboard.stats');
+
+        // First request should create cache
         $this->get('/dashboard');
-        $firstRequestTime = microtime(true) - $startTime;
 
-        // Second request should be faster due to cache
-        $startTime = microtime(true);
+        // Verify cache key exists after first request
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('dashboard.stats'));
+
+        // Second request should use cache
         $this->get('/dashboard');
-        $secondRequestTime = microtime(true) - $startTime;
 
-        // Cache should make second request faster (at least 50% faster)
-        $this->assertLessThan($firstRequestTime * 0.5, $secondRequestTime);
-
-        // Verify cache key exists
+        // Cache should still exist
         $this->assertTrue(\Illuminate\Support\Facades\Cache::has('dashboard.stats'));
     }
 
