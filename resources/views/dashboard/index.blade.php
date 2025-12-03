@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Support Classifier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Topbar -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-semibold text-gray-800">Smart Support Classifier</h1>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Dashboard
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Tickets Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Tickets</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ $totalTickets }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Open Tickets Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Open Tickets</p>
+                        <p class="text-3xl font-bold text-gray-900">
+                            {{ $ticketsByStatus->where('status', 'open')->first()?->count ?? 0 }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Tickets Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending Tickets</p>
+                        <p class="text-3xl font-bold text-gray-900">
+                            {{ $ticketsByStatus->where('status', 'pending')->first()?->count ?? 0 }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Closed Tickets Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Closed Tickets</p>
+                        <p class="text-3xl font-bold text-gray-900">
+                            {{ $ticketsByStatus->where('status', 'closed')->first()?->count ?? 0 }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Details Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Categories Donut Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Tickets by Category</h3>
+                <div class="relative">
+                    <canvas id="categoriesChart" width="300" height="300"></canvas>
+                </div>
+                <div class="mt-4 space-y-2">
+                    @foreach($ticketsByCategory as $index => $item)
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'][$index % 5] }}"></div>
+                                <span class="text-sm text-gray-600 capitalize">{{ $item->category }}</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">{{ $item->count }}</span>
+                        </div>
+                    @endforeach
+                    @if($ticketsByCategory->isEmpty())
+                        <p class="text-sm text-gray-500">No categorized tickets yet</p>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Sentiment Analysis with Badges -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Sentiment Analysis</h3>
+                <div class="space-y-4">
+                    @foreach($ticketsBySentiment as $item)
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                @if($item->sentiment === 'positive')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        😊 Positive
+                                    </span>
+                                @elseif($item->sentiment === 'negative')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        😞 Negative
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        😐 Neutral
+                                    </span>
+                                @endif
+                                <span class="text-sm font-medium text-gray-900">{{ $item->count }}</span>
+                            </div>
+                            <div class="flex-1 ml-4">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    @if($item->sentiment === 'positive')
+                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @elseif($item->sentiment === 'negative')
+                                        <div class="bg-red-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @else
+                                        <div class="bg-gray-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {{ $totalTickets > 0 ? round(($item->count / $totalTickets) * 100, 1) : 0 }}%
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                    @if($ticketsBySentiment->isEmpty())
+                        <div class="text-center py-8">
+                            <div class="text-gray-400 mb-2">
+                                <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-.966-5.618-2.479.048-.132.096-.264.144-.396M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-sm text-gray-500">No sentiment data yet</p>
+                            <p class="text-xs text-gray-400 mt-1">Tickets will be analyzed automatically</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Chart.js donut chart for categories
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('categoriesChart');
+            if (ctx) {
+                const categoriesData = @json($ticketsByCategory);
+                const labels = categoriesData.map(item => item.category.charAt(0).toUpperCase() + item.category.slice(1));
+                const data = categoriesData.map(item => item.count);
+                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors.slice(0, data.length),
+                            borderWidth: 0,
+                            hoverBorderWidth: 2,
+                            hoverBorderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.parsed + ' tickets';
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
