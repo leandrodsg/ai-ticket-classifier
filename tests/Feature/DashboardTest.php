@@ -92,4 +92,45 @@ class DashboardTest extends TestCase
 
         $this->assertLessThan(100, $responseTime, "Dashboard response time should be under 100ms, got {$responseTime}ms");
     }
+
+    /**
+     * Test that API endpoint has rate limiting.
+     */
+    public function test_api_endpoint_has_rate_limiting(): void
+    {
+        // Make 60 requests (should be ok)
+        for ($i = 0; $i < 60; $i++) {
+            $response = $this->get('/api/dashboard/stats');
+            $response->assertStatus(200);
+        }
+
+        // 61st request should be rate limited
+        $response = $this->get('/api/dashboard/stats');
+        $response->assertStatus(429); // Too Many Requests
+    }
+
+    /**
+     * Test that API returns JSON data.
+     */
+    public function test_api_returns_json_data(): void
+    {
+        // Create test data
+        Ticket::factory()->create(['category' => 'technical']);
+
+        $response = $this->get('/api/dashboard/stats');
+
+        $response->assertStatus(200)
+                ->assertHeader('Content-Type', 'application/json');
+
+        $data = $response->json();
+
+        // Verify JSON structure
+        $this->assertArrayHasKey('totalTickets', $data);
+        $this->assertArrayHasKey('ticketsByCategory', $data);
+        $this->assertArrayHasKey('ticketsBySentiment', $data);
+        $this->assertArrayHasKey('ticketsByStatus', $data);
+
+        $this->assertIsInt($data['totalTickets']);
+        $this->assertIsArray($data['ticketsByCategory']);
+    }
 }
