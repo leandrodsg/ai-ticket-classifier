@@ -125,23 +125,54 @@
                 </div>
             </div>
 
-            <!-- Sentiment Analysis Placeholder -->
+            <!-- Sentiment Analysis with Badges -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Sentiment Analysis</h3>
-                <div class="space-y-3">
+                <div class="space-y-4">
                     @foreach($ticketsBySentiment as $item)
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-sm text-gray-600 capitalize">{{ $item->sentiment }}</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                @if($item->sentiment === 'positive')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        😊 Positive
+                                    </span>
+                                @elseif($item->sentiment === 'negative')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        😞 Negative
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        😐 Neutral
+                                    </span>
+                                @endif
                                 <span class="text-sm font-medium text-gray-900">{{ $item->count }}</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                            <div class="flex-1 ml-4">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    @if($item->sentiment === 'positive')
+                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @elseif($item->sentiment === 'negative')
+                                        <div class="bg-red-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @else
+                                        <div class="bg-gray-500 h-2 rounded-full transition-all duration-300" style="width: {{ $totalTickets > 0 ? ($item->count / $totalTickets) * 100 : 0 }}%"></div>
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {{ $totalTickets > 0 ? round(($item->count / $totalTickets) * 100, 1) : 0 }}%
+                                </div>
                             </div>
                         </div>
                     @endforeach
                     @if($ticketsBySentiment->isEmpty())
-                        <p class="text-sm text-gray-500">No sentiment data yet</p>
+                        <div class="text-center py-8">
+                            <div class="text-gray-400 mb-2">
+                                <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-.966-5.618-2.479.048-.132.096-.264.144-.396M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-sm text-gray-500">No sentiment data yet</p>
+                            <p class="text-xs text-gray-400 mt-1">Tickets will be analyzed automatically</p>
+                        </div>
                     @endif
                 </div>
             </div>
