@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Smart Support Classifier</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-50">
     <!-- Topbar -->
@@ -102,13 +103,19 @@
 
         <!-- Charts and Details Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Categories Chart Placeholder -->
+            <!-- Categories Donut Chart -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Tickets by Category</h3>
-                <div class="space-y-2">
-                    @foreach($ticketsByCategory as $item)
+                <div class="relative">
+                    <canvas id="categoriesChart" width="300" height="300"></canvas>
+                </div>
+                <div class="mt-4 space-y-2">
+                    @foreach($ticketsByCategory as $index => $item)
                         <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600 capitalize">{{ $item->category }}</span>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'][$index % 5] }}"></div>
+                                <span class="text-sm text-gray-600 capitalize">{{ $item->category }}</span>
+                            </div>
                             <span class="text-sm font-medium text-gray-900">{{ $item->count }}</span>
                         </div>
                     @endforeach
@@ -140,5 +147,49 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Initialize Chart.js donut chart for categories
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('categoriesChart');
+            if (ctx) {
+                const categoriesData = @json($ticketsByCategory);
+                const labels = categoriesData.map(item => item.category.charAt(0).toUpperCase() + item.category.slice(1));
+                const data = categoriesData.map(item => item.count);
+                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors.slice(0, data.length),
+                            borderWidth: 0,
+                            hoverBorderWidth: 2,
+                            hoverBorderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.parsed + ' tickets';
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
