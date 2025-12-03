@@ -50,7 +50,7 @@
         </div>
 
         <!-- Form -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6">
             <form method="POST" action="{{ route('tickets.update', $ticket) }}" class="space-y-6">
                 @csrf
                 @method('PUT')
@@ -126,7 +126,7 @@
         </div>
 
         <!-- Current Status Info -->
-        <div class="mt-8 bg-gray-50 rounded-lg p-4">
+        <div class="mt-8 bg-gray-50/80 backdrop-blur-sm rounded-xl p-4 border border-gray-100">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">

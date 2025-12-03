@@ -42,7 +42,7 @@
         </div>
 
         <!-- Form -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6">
             <form method="POST" action="{{ route('tickets.store') }}" class="space-y-6">
                 @csrf
 
@@ -117,7 +117,7 @@
         </div>
 
         <!-- Help Text -->
-        <div class="mt-8 bg-blue-50 rounded-lg p-4">
+        <div class="mt-8 bg-blue-50/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">

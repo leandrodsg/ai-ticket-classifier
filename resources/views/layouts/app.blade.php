@@ -22,9 +22,9 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="font-sans antialiased bg-gray-50 text-gray-900">
+<body class="min-h-screen font-sans antialiased bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 text-gray-900">
     <!-- Topbar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo and Brand -->
