@@ -25,65 +25,62 @@ class TicketClassifierService
             return $this->mockClassify($description);
         }
 
-        // Try primary provider (DeepSeek)
+        // Use OpenRouter as the ONLY AI provider (no DeepSeek fallback)
         try {
-            $result = $this->classifyWithProvider('deepseek', $description);
-            Log::info('Primary AI provider succeeded', ['provider' => 'deepseek']);
+            Log::info('Using OpenRouter AI provider (only provider)');
+            $result = $this->classifyWithOpenRouter($description);
+            Log::info('OpenRouter AI provider succeeded');
             return $result;
         } catch (\Exception $e) {
-            Log::warning('Primary AI provider failed, trying fallbacks', [
-                'provider' => 'deepseek',
+            Log::warning('OpenRouter AI provider failed, using mock classification', [
                 'error' => $e->getMessage()
             ]);
 
-            // Try fallback providers
-            $fallbackProviders = config('ai.fallback_providers', []);
-            foreach ($fallbackProviders as $providerName => $providerConfig) {
-                if (!$providerConfig['enabled']) {
-                    continue;
-                }
-
-                try {
-                    $result = $this->classifyWithProvider($providerName, $description);
-                    Log::info('Fallback AI provider succeeded', ['provider' => $providerName]);
-                    return $result;
-                } catch (\Exception $fallbackError) {
-                    Log::warning('Fallback AI provider failed', [
-                        'provider' => $providerName,
-                        'error' => $fallbackError->getMessage()
-                    ]);
-                    continue;
-                }
-            }
+            // Fallback to mock classification
+            return $this->mockClassify($description);
         }
-
-        // All providers failed, use mock as last resort
-        Log::info('All AI providers failed, using mock classification');
-        return $this->mockClassify($description);
     }
 
     /**
-     * Classify using a specific AI provider.
+     * Classify using OpenRouter AI provider with model fallback.
      *
-     * @param string $providerName
      * @param string $description
      * @return array
      * @throws \Exception
      */
-    protected function classifyWithProvider(string $providerName, string $description): array
+    protected function classifyWithOpenRouter(string $description): array
     {
-        $providerConfig = config("ai.{$providerName}");
+        $providerConfig = config('ai.openrouter');
 
         if (!$providerConfig) {
-            throw new \Exception("AI provider '{$providerName}' not configured");
+            throw new \Exception("OpenRouter not configured");
         }
 
-        // Check if provider is properly configured
         if (empty($providerConfig['api_key'])) {
-            throw new \Exception("AI provider '{$providerName}' missing API key");
+            throw new \Exception("OpenRouter API key missing");
         }
 
-        return $this->callAiProvider($providerName, $providerConfig, $description);
+        $models = $providerConfig['models'] ?? ['meta-llama/llama-3.2-3b-instruct:free'];
+
+        // Try each model in sequence until one works
+        foreach ($models as $model) {
+            try {
+                Log::info('Trying OpenRouter model', ['model' => $model]);
+                $configWithModel = array_merge($providerConfig, ['model' => $model]);
+                $result = $this->callAiProvider('openrouter', $configWithModel, $description);
+                Log::info('OpenRouter model succeeded', ['model' => $model]);
+                return $result;
+            } catch (\Exception $e) {
+                Log::warning('OpenRouter model failed, trying next', [
+                    'model' => $model,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+
+        // All models failed
+        throw new \Exception("All OpenRouter models failed");
     }
 
     /**
@@ -106,7 +103,8 @@ class TicketClassifierService
                            $exception instanceof RequestException;
                 })
                 ->withToken($providerConfig['api_key'])
-                ->post($providerConfig['api_url'] . '/chat/completions', [
+                ->withoutVerifying() // Skip SSL verification for development
+                ->post($providerConfig['api_url'], [
                     'model' => $providerConfig['model'],
                     'messages' => [
                         [
@@ -144,63 +142,7 @@ class TicketClassifierService
         }
     }
 
-    /**
-     * Classify using DeepSeek API.
-     *
-     * @param string $description
-     * @return array
-     * @throws \Exception
-     */
-    protected function realClassify(string $description): array
-    {
-        $startTime = microtime(true);
 
-        try {
-            $response = Http::timeout(config('ai.deepseek.timeout'))
-                ->retry(
-                    config('ai.deepseek.retries'),
-                    config('ai.deepseek.retry_delay'),
-                    function ($exception) {
-                        return $exception instanceof ConnectionException ||
-                               $exception instanceof RequestException;
-                    }
-                )
-                ->withToken(config('ai.deepseek.api_key'))
-                ->post(config('ai.deepseek.api_url') . '/chat/completions', [
-                    'model' => config('ai.deepseek.model'),
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $this->getSystemPrompt()
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $description
-                        ]
-                    ],
-                    'temperature' => config('ai.deepseek.temperature'),
-                    'max_tokens' => config('ai.deepseek.max_tokens'),
-                ]);
-
-            $processingTime = (int) ((microtime(true) - $startTime) * 1000);
-
-            if ($response->successful()) {
-                return $this->parseApiResponse($response->json(), $processingTime);
-            }
-
-            throw new \Exception("API request failed: {$response->status()} - {$response->body()}");
-
-        } catch (\Exception $e) {
-            Log::error('DeepSeek API classification failed', [
-                'description' => $description,
-                'error' => $e->getMessage(),
-                'processing_time_ms' => (int) ((microtime(true) - $startTime) * 1000)
-            ]);
-
-            // Fallback to mock classification if API fails
-            return $this->mockClassify($description);
-        }
-    }
 
     /**
      * Mock classification for development/testing.
@@ -407,7 +349,7 @@ class TicketClassifierService
     ): AiLog {
         return AiLog::create([
             'ticket_id' => $ticketId,
-            'model' => $response['model'] ?? config('ai.deepseek.model'),
+            'model' => $response['model'] ?? config('ai.openrouter.model'),
             'prompt' => $prompt,
             'response' => $response,
             'confidence' => $response['confidence'] ?? null,

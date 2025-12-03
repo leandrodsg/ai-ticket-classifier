@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Services\TicketClassifierService;
+use Illuminate\Console\Command;
+
+class TestAiClassification extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'ai:test-classification {description?} {--mode=mock : Classification mode (mock or real)}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Test AI ticket classification with mock or real DeepSeek API';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $description = $this->argument('description') ?: $this->ask('Enter ticket description to classify');
+        $mode = $this->option('mode');
+
+        $this->info("🔍 Testing AI Classification");
+        $this->line("📝 Description: {$description}");
+        $this->line("🎯 Mode: {$mode}");
+        $this->line('');
+
+        // Temporarily set mock mode if specified
+        $originalMockMode = config('ai.deepseek.mock_mode');
+        if ($mode === 'mock') {
+            config(['ai.deepseek.mock_mode' => true]);
+        } elseif ($mode === 'real') {
+            config(['ai.deepseek.mock_mode' => false]);
+        }
+
+        $service = app(TicketClassifierService::class);
+
+        $this->info("🤖 Classifying...");
+        $startTime = microtime(true);
+
+        try {
+            $result = $service->classify($description);
+            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            $this->line('');
+            $this->info("✅ Classification Result:");
+            $this->table(
+                ['Field', 'Value'],
+                [
+                    ['Category', $result['category'] ?? 'N/A'],
+                    ['Sentiment', $result['sentiment'] ?? 'N/A'],
+                    ['Confidence', isset($result['confidence']) ? number_format($result['confidence'], 3) : 'N/A'],
+                    ['Model', $result['model'] ?? 'N/A'],
+                    ['Processing Time', "{$processingTime}ms"],
+                    ['Reasoning', $result['reasoning'] ?? 'N/A'],
+                ]
+            );
+
+            if (isset($result['processing_time_ms'])) {
+                $this->info("⚡ API Response Time: {$result['processing_time_ms']}ms");
+            }
+
+        } catch (\Exception $e) {
+            $this->error("❌ Classification failed: {$e->getMessage()}");
+            $this->line("🔄 Falling back to mock classification...");
+
+            try {
+                config(['ai.deepseek.mock_mode' => true]);
+                $fallbackResult = $service->classify($description);
+
+                $this->line('');
+                $this->warn("🔄 Fallback Result (Mock Mode):");
+                $this->table(
+                    ['Field', 'Value'],
+                    [
+                        ['Category', $fallbackResult['category'] ?? 'N/A'],
+                        ['Sentiment', $fallbackResult['sentiment'] ?? 'N/A'],
+                        ['Confidence', isset($fallbackResult['confidence']) ? number_format($fallbackResult['confidence'], 3) : 'N/A'],
+                        ['Model', $fallbackResult['model'] ?? 'N/A'],
+                    ]
+                );
+            } catch (\Exception $fallbackError) {
+                $this->error("❌ Fallback also failed: {$fallbackError->getMessage()}");
+            }
+        }
+
+        // Restore original mock mode
+        config(['ai.deepseek.mock_mode' => $originalMockMode]);
+
+        $this->line('');
+        $this->info("🎯 Test completed!");
+    }
+}
