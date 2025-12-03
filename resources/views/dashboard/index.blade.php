@@ -1,53 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Smart Support Classifier</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .loading-skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Topbar -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-6">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-semibold text-gray-800">Smart Support Classifier</h1>
-                </div>
-                <div class="text-sm text-gray-600">
-                    Dashboard
-                </div>
-            </div>
-        </div>
-    </div>
+@extends('layouts.app')
 
-    <!-- Main Content -->
+@section('title', 'Dashboard')
+
+@section('breadcrumbs')
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <span class="inline-flex items-center text-sm font-medium text-blue-600">
+                    <svg class="w-3 h-3 mr-2.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2A1 1 0 0 0 1 10h2v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-4a1 1 0 0 0 1-1h2a1 1 0 0 0 1 1v4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8h2a1 1 0 0 0 .707-1.707Z"/>
+                    </svg>
+                    Dashboard
+                </span>
+            </li>
+        </ol>
+    </nav>
+@endsection
+
+@section('content')
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Stats Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Tickets Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg border border-gray-200/50 p-6 transition-all duration-300 hover:-translate-y-1">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                         </div>
                     </div>
-                    <div class="ml-4">
+                    <div class="ml-5">
                         <p class="text-sm font-medium text-gray-600">Total Tickets</p>
                         <p class="text-3xl font-bold text-gray-900">{{ $totalTickets }}</p>
                     </div>
@@ -55,16 +39,16 @@
             </div>
 
             <!-- Open Tickets Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg border border-gray-200/50 p-6 transition-all duration-300 hover:-translate-y-1">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
                     </div>
-                    <div class="ml-4">
+                    <div class="ml-5">
                         <p class="text-sm font-medium text-gray-600">Open Tickets</p>
                         <p class="text-3xl font-bold text-gray-900">
                             {{ $ticketsByStatus->where('status', 'open')->first()?->count ?? 0 }}
@@ -74,16 +58,16 @@
             </div>
 
             <!-- Pending Tickets Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg border border-gray-200/50 p-6 transition-all duration-300 hover:-translate-y-1">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
                     </div>
-                    <div class="ml-4">
+                    <div class="ml-5">
                         <p class="text-sm font-medium text-gray-600">Pending Tickets</p>
                         <p class="text-3xl font-bold text-gray-900">
                             {{ $ticketsByStatus->where('status', 'pending')->first()?->count ?? 0 }}
@@ -93,16 +77,16 @@
             </div>
 
             <!-- Closed Tickets Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg border border-gray-200/50 p-6 transition-all duration-300 hover:-translate-y-1">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
                     </div>
-                    <div class="ml-4">
+                    <div class="ml-5">
                         <p class="text-sm font-medium text-gray-600">Closed Tickets</p>
                         <p class="text-3xl font-bold text-gray-900">
                             {{ $ticketsByStatus->where('status', 'closed')->first()?->count ?? 0 }}
@@ -115,8 +99,8 @@
         <!-- Charts and Details Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Categories Donut Chart -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Tickets by Category</h3>
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">Tickets by Category</h3>
                 <div class="relative">
                     <canvas id="categoriesChart" width="300" height="300"></canvas>
                 </div>
@@ -137,8 +121,8 @@
             </div>
 
             <!-- Sentiment Analysis with Badges -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Sentiment Analysis</h3>
+            <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">Sentiment Analysis</h3>
                 <div class="space-y-4">
                     @foreach($ticketsBySentiment as $item)
                         <div class="flex items-center justify-between">
@@ -190,6 +174,8 @@
         </div>
     </div>
 
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Initialize Chart.js donut chart for categories
         document.addEventListener('DOMContentLoaded', function() {
@@ -233,5 +219,4 @@
             }
         });
     </script>
-</body>
-</html>
+@endsection
