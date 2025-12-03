@@ -19,12 +19,129 @@ class TicketClassifierService
      */
     public function classify(string $description): array
     {
-        // Check if mock mode is enabled
-        if (config('ai.deepseek.mock_mode')) {
+        // Check if always use mock mode
+        if (config('ai.global.always_use_mock')) {
+            Log::info('Using mock classification (forced by config)');
             return $this->mockClassify($description);
         }
 
-        return $this->realClassify($description);
+        // Try primary provider (DeepSeek)
+        try {
+            $result = $this->classifyWithProvider('deepseek', $description);
+            Log::info('Primary AI provider succeeded', ['provider' => 'deepseek']);
+            return $result;
+        } catch (\Exception $e) {
+            Log::warning('Primary AI provider failed, trying fallbacks', [
+                'provider' => 'deepseek',
+                'error' => $e->getMessage()
+            ]);
+
+            // Try fallback providers
+            $fallbackProviders = config('ai.fallback_providers', []);
+            foreach ($fallbackProviders as $providerName => $providerConfig) {
+                if (!$providerConfig['enabled']) {
+                    continue;
+                }
+
+                try {
+                    $result = $this->classifyWithProvider($providerName, $description);
+                    Log::info('Fallback AI provider succeeded', ['provider' => $providerName]);
+                    return $result;
+                } catch (\Exception $fallbackError) {
+                    Log::warning('Fallback AI provider failed', [
+                        'provider' => $providerName,
+                        'error' => $fallbackError->getMessage()
+                    ]);
+                    continue;
+                }
+            }
+        }
+
+        // All providers failed, use mock as last resort
+        Log::info('All AI providers failed, using mock classification');
+        return $this->mockClassify($description);
+    }
+
+    /**
+     * Classify using a specific AI provider.
+     *
+     * @param string $providerName
+     * @param string $description
+     * @return array
+     * @throws \Exception
+     */
+    protected function classifyWithProvider(string $providerName, string $description): array
+    {
+        $providerConfig = config("ai.{$providerName}");
+
+        if (!$providerConfig) {
+            throw new \Exception("AI provider '{$providerName}' not configured");
+        }
+
+        // Check if provider is properly configured
+        if (empty($providerConfig['api_key'])) {
+            throw new \Exception("AI provider '{$providerName}' missing API key");
+        }
+
+        return $this->callAiProvider($providerName, $providerConfig, $description);
+    }
+
+    /**
+     * Call a specific AI provider API.
+     *
+     * @param string $providerName
+     * @param array $providerConfig
+     * @param string $description
+     * @return array
+     * @throws \Exception
+     */
+    protected function callAiProvider(string $providerName, array $providerConfig, string $description): array
+    {
+        $startTime = microtime(true);
+
+        try {
+            $response = Http::timeout($providerConfig['timeout'] ?? 30)
+                ->retry(3, 1000, function ($exception) {
+                    return $exception instanceof ConnectionException ||
+                           $exception instanceof RequestException;
+                })
+                ->withToken($providerConfig['api_key'])
+                ->post($providerConfig['api_url'] . '/chat/completions', [
+                    'model' => $providerConfig['model'],
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $this->getSystemPrompt()
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $description
+                        ]
+                    ],
+                    'temperature' => $providerConfig['temperature'] ?? 0.3,
+                    'max_tokens' => $providerConfig['max_tokens'] ?? 500,
+                ]);
+
+            $processingTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            if ($response->successful()) {
+                return $this->parseApiResponse($response->json(), $processingTime, $providerName);
+            }
+
+            $errorBody = $response->json();
+            $errorMessage = $errorBody['error']['message'] ?? $response->body();
+
+            throw new \Exception("{$providerName} API failed: {$response->status()} - {$errorMessage}");
+
+        } catch (\Exception $e) {
+            Log::error("{$providerName} API classification failed", [
+                'description' => $description,
+                'error' => $e->getMessage(),
+                'processing_time_ms' => (int) ((microtime(true) - $startTime) * 1000)
+            ]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -120,8 +237,8 @@ class TicketClassifierService
      */
     protected function getSystemPrompt(): string
     {
-        $categories = implode(', ', config('ai.deepseek.valid_categories'));
-        $sentiments = implode(', ', config('ai.deepseek.valid_sentiments'));
+        $categories = implode(', ', config('ai.global.valid_categories'));
+        $sentiments = implode(', ', config('ai.global.valid_sentiments'));
 
         return "You are an AI assistant that classifies customer support tickets. " .
                "Analyze the ticket description and return a JSON response with: " .
@@ -130,13 +247,14 @@ class TicketClassifierService
     }
 
     /**
-     * Parse the API response from DeepSeek.
+     * Parse the API response from any AI provider.
      *
      * @param array $response
      * @param int $processingTime
+     * @param string $providerName
      * @return array
      */
-    protected function parseApiResponse(array $response, int $processingTime): array
+    protected function parseApiResponse(array $response, int $processingTime, string $providerName = 'deepseek'): array
     {
         // Extract the content from the response
         $content = $response['choices'][0]['message']['content'] ?? '';
@@ -145,7 +263,7 @@ class TicketClassifierService
         $parsed = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception("Invalid JSON response from AI: {$content}");
+            throw new \Exception("Invalid JSON response from {$providerName}: {$content}");
         }
 
         // Validate the response structure
@@ -153,7 +271,8 @@ class TicketClassifierService
 
         return array_merge($parsed, [
             'processing_time_ms' => $processingTime,
-            'model' => $response['model'] ?? config('ai.deepseek.model'),
+            'model' => $response['model'] ?? config("ai.{$providerName}.model", 'unknown'),
+            'provider' => $providerName,
         ]);
     }
 
@@ -173,11 +292,11 @@ class TicketClassifierService
             }
         }
 
-        if (!in_array($response['category'], config('ai.deepseek.valid_categories'))) {
+        if (!in_array($response['category'], config('ai.global.valid_categories'))) {
             throw new \Exception("Invalid category: {$response['category']}");
         }
 
-        if (!in_array($response['sentiment'], config('ai.deepseek.valid_sentiments'))) {
+        if (!in_array($response['sentiment'], config('ai.global.valid_sentiments'))) {
             throw new \Exception("Invalid sentiment: {$response['sentiment']}");
         }
 
@@ -194,22 +313,27 @@ class TicketClassifierService
      */
     protected function detectCategory(string $text): string
     {
-        // Technical keywords
-        if (preg_match('/\b(bug|error|crash|fail|broken|not working|doesn\'?t work)\b/i', $text)) {
+        // Technical keywords - highest priority
+        if (preg_match('/\b(bug|error|crash|fail|broken|not working|doesn\'?t work|system|software|application|database|server|login|export|import|upload|download)\b/i', $text)) {
             return 'technical';
         }
 
         // Commercial keywords
-        if (preg_match('/\b(price|cost|buy|purchase|plan|subscription|quote)\b/i', $text)) {
+        if (preg_match('/\b(price|cost|buy|purchase|plan|subscription|quote|pricing|enterprise|pro|premium)\b/i', $text)) {
             return 'commercial';
         }
 
         // Billing keywords
-        if (preg_match('/\b(bill|invoice|payment|charge|refund|money)\b/i', $text)) {
+        if (preg_match('/\b(bill|invoice|payment|charge|refund|money|billing|account|subscription|cancel|renew)\b/i', $text)) {
             return 'billing';
         }
 
-        // Support keywords (default)
+        // General support keywords (default)
+        if (preg_match('/\b(help|support|question|how|what|when|where|why|assistance|guide|tutorial|manual)\b/i', $text)) {
+            return 'general';
+        }
+
+        // Default to support for anything else
         return 'support';
     }
 
