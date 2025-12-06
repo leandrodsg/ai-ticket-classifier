@@ -1,15 +1,19 @@
 # Smart Support Classifier
 
-An AI-powered ticket classification system built with Laravel 12 and DeepSeek AI.
+An AI-powered ticket classification system built with Laravel 12 and OpenRouter AI.
 
 ## Features
 
-- Automatic ticket classification using AI
-- Laravel 12 framework
-- Docker containerization with Laravel Sail
-- MySQL database
-- Redis caching
-- Mailpit for email testing
+- 🤖 Automatic ticket classification using AI (OpenRouter)
+- 📊 Interactive dashboard with real-time statistics
+- 🎯 Multi-category classification (Technical, Commercial, Billing, General, Support)
+- 😊 Sentiment analysis (Positive, Negative, Neutral)
+- 🔒 Rate limiting and security measures
+- 🧪 Comprehensive test suite (25+ tests)
+- 🐳 Docker containerization with Laravel Sail
+- 🗄️ MySQL database with Redis caching
+- 📧 Mailpit for email testing
+- 📱 Responsive web interface
 
 ## Requirements
 
@@ -71,10 +75,57 @@ Start the development server:
 
 ## Testing
 
-Run the test suite:
+Run the comprehensive test suite:
 ```bash
 ./vendor/bin/sail test
 ```
+
+The test suite includes:
+- **Validation Tests**: Form validation and data constraints
+- **CRUD Tests**: Complete ticket management operations
+- **AI Tests**: Classification service functionality
+- **Dashboard Tests**: Performance and caching verification
+
+### Seeding Demo Data
+
+Populate the database with realistic sample data:
+```bash
+./vendor/bin/sail artisan db:seed
+```
+
+This creates 30+ sample tickets across all categories with varied sentiments and statuses.
+
+## API Documentation
+
+### AI Classification
+- **Provider**: OpenRouter (multiple models with fallback)
+- **Categories**: technical, commercial, billing, general, support
+- **Sentiment**: positive, negative, neutral
+- **Rate Limit**: 10 requests/minute
+
+### Dashboard Statistics
+Real-time metrics including:
+- Total tickets by category
+- Sentiment distribution
+- Status breakdown
+- Performance monitoring
+
+## Architecture
+
+- **Backend**: Laravel 12 with service-oriented architecture
+- **AI Integration**: OpenRouter API with intelligent fallback
+- **Database**: MySQL with Redis caching
+- **Frontend**: Blade templates with Tailwind CSS
+- **Testing**: PHPUnit with comprehensive coverage
+- **Containerization**: Docker with Laravel Sail
+
+## Security Features
+
+- Rate limiting on AI API calls
+- Input validation and sanitization
+- Secure logging (no sensitive data exposure)
+- CSRF protection
+- SQL injection prevention
 
 ## License
 
