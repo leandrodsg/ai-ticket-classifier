@@ -14,9 +14,9 @@ return [
     'openrouter' => [
         'api_key' => env('OPENROUTER_API_KEY'),
         'api_url' => env('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/chat/completions'),
-        'timeout' => env('OPENROUTER_TIMEOUT', 30),
-        'temperature' => env('OPENROUTER_TEMPERATURE', 0.3),
-        'max_tokens' => env('OPENROUTER_MAX_TOKENS', 500),
+        'timeout' => (int) env('OPENROUTER_TIMEOUT', 30),
+        'temperature' => (float) env('OPENROUTER_TEMPERATURE', 0.3),
+        'max_tokens' => (int) env('OPENROUTER_MAX_TOKENS', 500),
 
         /*
         |--------------------------------------------------------------------------
