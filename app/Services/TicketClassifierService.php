@@ -7,6 +7,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class TicketClassifierService
 {
@@ -94,31 +95,47 @@ class TicketClassifierService
      */
     protected function callAiProvider(string $providerName, array $providerConfig, string $description): array
     {
+        Log::info("Starting AI provider call", ['provider' => $providerName, 'model' => $providerConfig['model']]);
+
+        // Rate limiting: max 10 requests per minute per provider
+        $rateLimiterKey = "ai_{$providerName}_requests";
+        if (RateLimiter::tooManyAttempts($rateLimiterKey, 10)) {
+            $availableIn = RateLimiter::availableIn($rateLimiterKey);
+            Log::warning("Rate limit exceeded", ['provider' => $providerName, 'available_in' => $availableIn]);
+            throw new \Exception("Rate limit exceeded for {$providerName}. Try again in {$availableIn} seconds.");
+        }
+
+        RateLimiter::hit($rateLimiterKey, 60); // 60 seconds window
+        Log::info("Rate limiter hit", ['key' => $rateLimiterKey]);
+
         $startTime = microtime(true);
 
         try {
-            $response = Http::timeout($providerConfig['timeout'] ?? 30)
+            $payload = [
+                'model' => $providerConfig['model'],
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => $this->getSystemPrompt()
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $description
+                    ]
+                ],
+                'temperature' => (float) ($providerConfig['temperature'] ?? 0.3),
+                'max_tokens' => (int) ($providerConfig['max_tokens'] ?? 500),
+            ];
+
+
+
+            $response = Http::timeout((int) ($providerConfig['timeout'] ?? 30))
                 ->retry(3, 1000, function ($exception) {
                     return $exception instanceof ConnectionException ||
                            $exception instanceof RequestException;
                 })
                 ->withToken($providerConfig['api_key'])
-                ->withoutVerifying() // Skip SSL verification for development
-                ->post($providerConfig['api_url'], [
-                    'model' => $providerConfig['model'],
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $this->getSystemPrompt()
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $description
-                        ]
-                    ],
-                    'temperature' => $providerConfig['temperature'] ?? 0.3,
-                    'max_tokens' => $providerConfig['max_tokens'] ?? 500,
-                ]);
+                ->post($providerConfig['api_url'], $payload);
 
             $processingTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -128,14 +145,24 @@ class TicketClassifierService
 
             $errorBody = $response->json();
             $errorMessage = $errorBody['error']['message'] ?? $response->body();
+            
+            Log::error("{$providerName} API request failed", [
+                'status' => $response->status(),
+                'error_body' => $errorBody,
+                'full_response' => $response->body(),
+                'payload' => $payload
+            ]);
 
             throw new \Exception("{$providerName} API failed: {$response->status()} - {$errorMessage}");
 
         } catch (\Exception $e) {
+            // Log error without sensitive data
             Log::error("{$providerName} API classification failed", [
-                'description' => $description,
-                'error' => $e->getMessage(),
-                'processing_time_ms' => (int) ((microtime(true) - $startTime) * 1000)
+                'error_type' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'description_length' => strlen($description),
+                'processing_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
+                'model' => $providerConfig['model'] ?? 'unknown'
             ]);
 
             throw $e;
@@ -183,9 +210,10 @@ class TicketClassifierService
         $sentiments = implode(', ', config('ai.global.valid_sentiments'));
 
         return "You are an AI assistant that classifies customer support tickets. " .
+               "IMPORTANT: Respond ONLY with valid JSON. No markdown, no code blocks, no explanations outside JSON. " .
                "Analyze the ticket description and return a JSON response with: " .
                "category ({$categories}), sentiment ({$sentiments}), confidence (0.0-1.0), " .
-               "and reasoning. Be precise and consistent.";
+               "and reasoning (in English). Be precise and consistent.";
     }
 
     /**
@@ -200,6 +228,16 @@ class TicketClassifierService
     {
         // Extract the content from the response
         $content = $response['choices'][0]['message']['content'] ?? '';
+
+        // Clean the content - remove markdown code blocks if present
+        $content = trim($content);
+        if (str_starts_with($content, '```json')) {
+            $content = substr($content, 7); // Remove ```json
+        }
+        if (str_ends_with($content, '```')) {
+            $content = substr($content, 0, -3); // Remove ```
+        }
+        $content = trim($content);
 
         // Try to parse JSON from the content
         $parsed = json_decode($content, true);
