@@ -21,11 +21,14 @@ class StoreTicketRequest extends FormRequest
      */
     public function rules(): array
     {
+        $validCategories = implode(',', config('ai.global.valid_categories', ['technical', 'commercial', 'billing', 'general', 'support']));
+        $validSentiments = implode(',', config('ai.global.valid_sentiments', ['positive', 'negative', 'neutral']));
+
         return [
             'title' => 'required|string|min:5|max:255',
             'description' => 'required|string|min:10|max:5000',
-            'category' => 'nullable|string|max:100',
-            'sentiment' => 'nullable|string|in:positive,negative,neutral',
+            'category' => 'nullable|string|max:100|in:' . $validCategories,
+            'sentiment' => 'nullable|string|in:' . $validSentiments,
             'status' => 'nullable|string|in:open,closed,pending',
         ];
     }
