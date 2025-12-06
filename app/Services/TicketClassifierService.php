@@ -148,9 +148,8 @@ class TicketClassifierService
             
             Log::error("{$providerName} API request failed", [
                 'status' => $response->status(),
-                'error_body' => $errorBody,
-                'full_response' => $response->body(),
-                'payload' => $payload
+                'error_message' => $errorMessage,
+                'model' => $providerConfig['model'],
             ]);
 
             throw new \Exception("{$providerName} API failed: {$response->status()} - {$errorMessage}");

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use App\Services\TicketClassifierService;
 use App\Http\Requests\StoreTicketRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -55,6 +56,35 @@ class TicketController extends Controller
     public function store(StoreTicketRequest $request): RedirectResponse
     {
         $ticket = Ticket::create($request->validated());
+
+        // Classify ticket with AI
+        try {
+            $classifier = app(TicketClassifierService::class);
+            $classification = $classifier->classify($ticket->description);
+
+            // Update ticket with AI classification
+            $ticket->update([
+                'category' => $classification['category'],
+                'sentiment' => $classification['sentiment'],
+                'confidence' => $classification['confidence'],
+            ]);
+
+            // Log the classification
+            $classifier->logClassification(
+                $ticket->id,
+                $ticket->description,
+                $classification,
+                $classification['processing_time_ms'] ?? null,
+                'success'
+            );
+
+        } catch (\Exception $e) {
+            // Log error but don't fail ticket creation
+            \Log::error('AI classification failed during ticket creation', [
+                'ticket_id' => $ticket->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('tickets.show', $ticket)
                         ->with('success', 'Ticket created successfully!');

@@ -31,15 +31,26 @@ class TicketCrudTest extends TestCase
         $ticketData = [
             'title' => 'Test Ticket Title',
             'description' => 'This is a valid description with more than 10 characters for testing purposes.',
-            'category' => 'technical',
-            'sentiment' => 'neutral',
             'status' => 'open',
         ];
 
         $response = $this->post('/tickets', $ticketData);
 
         $response->assertRedirect(); // Should redirect to show page
-        $this->assertDatabaseHas('tickets', $ticketData);
+
+        // Check that ticket was created with basic data
+        $this->assertDatabaseHas('tickets', [
+            'title' => 'Test Ticket Title',
+            'description' => 'This is a valid description with more than 10 characters for testing purposes.',
+            'status' => 'open',
+        ]);
+
+        // Check that AI classification was added
+        $ticket = \App\Models\Ticket::where('title', 'Test Ticket Title')->first();
+        $this->assertNotNull($ticket->category);
+        $this->assertNotNull($ticket->sentiment);
+        $this->assertContains($ticket->category, ['technical', 'commercial', 'billing', 'general', 'support']);
+        $this->assertContains($ticket->sentiment, ['positive', 'negative', 'neutral']);
     }
 
     public function test_can_view_ticket_details(): void
