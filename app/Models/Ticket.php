@@ -16,6 +16,7 @@ class Ticket extends Model
         'description',
         'category',
         'sentiment',
+        'confidence',
         'status',
         'ai_classification_log',
     ];
