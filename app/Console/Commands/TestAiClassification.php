@@ -35,11 +35,11 @@ class TestAiClassification extends Command
         $this->line('');
 
         // Temporarily set mock mode if specified
-        $originalMockMode = config('ai.deepseek.mock_mode');
+        $originalMockMode = config('ai.global.always_use_mock');
         if ($mode === 'mock') {
-            config(['ai.deepseek.mock_mode' => true]);
+            config(['ai.global.always_use_mock' => true]);
         } elseif ($mode === 'real') {
-            config(['ai.deepseek.mock_mode' => false]);
+            config(['ai.global.always_use_mock' => false]);
         }
 
         $service = app(TicketClassifierService::class);
@@ -71,10 +71,11 @@ class TestAiClassification extends Command
 
         } catch (\Exception $e) {
             $this->error("❌ Classification failed: {$e->getMessage()}");
+
             $this->line("🔄 Falling back to mock classification...");
 
             try {
-                config(['ai.deepseek.mock_mode' => true]);
+                config(['ai.global.always_use_mock' => true]);
                 $fallbackResult = $service->classify($description);
 
                 $this->line('');
@@ -94,7 +95,7 @@ class TestAiClassification extends Command
         }
 
         // Restore original mock mode
-        config(['ai.deepseek.mock_mode' => $originalMockMode]);
+        config(['ai.global.always_use_mock' => $originalMockMode]);
 
         $this->line('');
         $this->info("🎯 Test completed!");
