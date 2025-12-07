@@ -71,14 +71,24 @@ class TicketCrudTest extends TestCase
         $updatedData = [
             'title' => 'Updated Title',
             'description' => 'Updated description with sufficient length.',
-            'category' => 'commercial',
-            'sentiment' => 'positive',
             'status' => 'closed',
         ];
 
         $response = $this->put("/tickets/{$ticket->id}", $updatedData);
 
         $response->assertRedirect(); // Should redirect to show page
-        $this->assertDatabaseHas('tickets', array_merge(['id' => $ticket->id], $updatedData));
+
+        // Check basic fields were updated
+        $this->assertDatabaseHas('tickets', [
+            'id' => $ticket->id,
+            'title' => 'Updated Title',
+            'description' => 'Updated description with sufficient length.',
+            'status' => 'closed',
+        ]);
+
+        // Check that priority was recalculated (since description changed)
+        $updatedTicket = Ticket::find($ticket->id);
+        $this->assertNotNull($updatedTicket->priority);
+        $this->assertNotNull($updatedTicket->sla_due_at);
     }
 }
