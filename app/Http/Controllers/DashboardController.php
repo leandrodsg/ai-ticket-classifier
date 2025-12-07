@@ -25,7 +25,8 @@ class DashboardController extends Controller
             $stats = Cache::remember($cacheKey, 300, function () {
                 Log::info('Dashboard cache miss - fetching from database');
 
-                return [
+                // Basic ticket statistics
+                $basicStats = [
                     'totalTickets' => Ticket::count(),
                     'ticketsByCategory' => Ticket::selectRaw('category, COUNT(*) as count')
                         ->whereNotNull('category')
@@ -39,6 +40,57 @@ class DashboardController extends Controller
                         ->groupBy('status')
                         ->get(),
                 ];
+
+                // Priority statistics
+                $priorityStats = [
+                    'ticketsByPriority' => Ticket::selectRaw('priority, COUNT(*) as count')
+                        ->whereNotNull('priority')
+                        ->groupBy('priority')
+                        ->get(),
+                    'criticalTickets' => Ticket::critical()->count(),
+                    'slaOverdueTickets' => Ticket::slaOverdue()->count(),
+                ];
+
+                // SLA statistics
+                $slaStats = [
+                    'totalTicketsWithSLA' => Ticket::whereNotNull('sla_due_at')->count(),
+                    'slaBreachedTickets' => Ticket::whereNotNull('sla_due_at')
+                        ->where('sla_due_at', '<', now())
+                        ->where('status', '!=', 'closed')
+                        ->count(),
+                    'slaOnTimeTickets' => Ticket::whereNotNull('sla_due_at')
+                        ->where(function ($query) {
+                            $query->where('sla_due_at', '>=', now())
+                                  ->orWhere('status', 'closed');
+                        })
+                        ->count(),
+                ];
+
+                // Calculate SLA compliance percentage
+                $totalWithSLA = $slaStats['totalTicketsWithSLA'];
+                $slaStats['slaCompliancePercentage'] = $totalWithSLA > 0
+                    ? round((($totalWithSLA - $slaStats['slaBreachedTickets']) / $totalWithSLA) * 100, 1)
+                    : 0;
+
+                // Recent tickets with priority alerts
+                $recentAlerts = Ticket::with(['aiLogs' => function ($query) {
+                    $query->latest()->limit(1);
+                }])
+                ->where(function ($query) {
+                    $query->where('priority', 'critical')
+                          ->orWhere(function ($subQuery) {
+                              $subQuery->whereNotNull('sla_due_at')
+                                      ->where('sla_due_at', '<', now()->addHours(24))
+                                      ->where('status', '!=', 'closed');
+                          });
+                })
+                ->latest()
+                ->limit(5)
+                ->get();
+
+                return array_merge($basicStats, $priorityStats, $slaStats, [
+                    'recentAlerts' => $recentAlerts,
+                ]);
             });
 
             Log::info('Dashboard cache hit', ['cache_key' => $cacheKey]);
