@@ -43,6 +43,53 @@ class TicketClassifierService
     }
 
     /**
+     * Classify a ticket and calculate priority using ITIL matrix.
+     *
+     * @param string $description
+     * @return array
+     * @throws \Exception
+     */
+    public function classifyWithPriority(string $description): array
+    {
+        // First, get the basic classification
+        $classification = $this->classify($description);
+
+        // Then calculate priority using the priority service
+        try {
+            $priorityService = app(PriorityCalculatorService::class);
+            $priorityData = $priorityService->calculateFromCategoryAndSentiment(
+                $classification['category'],
+                $classification['sentiment']
+            );
+
+            // Merge priority data with classification
+            $classification = array_merge($classification, $priorityData);
+
+            Log::info('Priority calculated successfully', [
+                'category' => $classification['category'],
+                'sentiment' => $classification['sentiment'],
+                'priority' => $classification['priority'],
+                'impact_level' => $classification['impact_level'],
+                'urgency_level' => $classification['urgency_level']
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Priority calculation failed, continuing without priority', [
+                'error' => $e->getMessage(),
+                'category' => $classification['category'],
+                'sentiment' => $classification['sentiment']
+            ]);
+
+            // Add default values if priority calculation fails
+            $classification['priority'] = null;
+            $classification['impact_level'] = null;
+            $classification['urgency_level'] = null;
+        }
+
+        return $classification;
+    }
+
+    /**
      * Classify using OpenRouter AI provider with model fallback.
      *
      * @param string $description
@@ -189,13 +236,27 @@ class TicketClassifierService
         // Generate confidence based on keyword matches
         $confidence = $this->calculateConfidence($lower);
 
-        return [
+        // Calculate priority using the priority service
+        $priorityData = [];
+        try {
+            $priorityService = app(PriorityCalculatorService::class);
+            $priorityData = $priorityService->calculateFromCategoryAndSentiment($category, $sentiment);
+        } catch (\Exception $e) {
+            Log::warning('Mock priority calculation failed', ['error' => $e->getMessage()]);
+            $priorityData = [
+                'priority' => null,
+                'impact_level' => null,
+                'urgency_level' => null,
+            ];
+        }
+
+        return array_merge([
             'category' => $category,
             'sentiment' => $sentiment,
             'confidence' => $confidence,
             'reasoning' => "Mock classification based on keyword analysis",
             'model' => 'mock-classifier',
-        ];
+        ], $priorityData);
     }
 
     /**
