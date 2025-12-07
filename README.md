@@ -12,8 +12,10 @@ An AI-powered ticket classification system built with Laravel 12 and OpenRouter 
 - 📊 Interactive dashboard with real-time statistics
 - 🎯 Multi-category classification (Technical, Commercial, Billing, General, Support)
 - 😊 Sentiment analysis (Positive, Negative, Neutral)
+- 🚨 **ITIL-based Priority System** with automatic SLA calculation
+- 📈 Priority distribution analytics and alerts
 - 🔒 Rate limiting and security measures
-- 🧪 Comprehensive test suite (25+ tests)
+- 🧪 Comprehensive test suite (37+ tests)
 - 🐳 Docker containerization with Laravel Sail
 - 🗄️ MySQL database with Redis caching
 - 📧 Mailpit for email testing
@@ -106,6 +108,49 @@ The system uses OpenRouter as the primary AI provider with multiple model fallba
 - Perfect for testing and development
 
 **Environment Variable**: `AI_ALWAYS_USE_MOCK=true/false`
+
+### ITIL Priority System
+
+The system implements a complete **ITIL v4-based priority management** with automatic SLA calculation:
+
+#### Priority Matrix (Impact × Urgency)
+
+| Impact \ Urgency | High Urgency | Medium Urgency | Low Urgency |
+|------------------|--------------|----------------|-------------|
+| **Critical Impact** | Critical | Critical | High |
+| **High Impact** | Critical | High | Medium |
+| **Medium Impact** | High | Medium | Low |
+| **Low Impact** | Medium | Low | Low |
+
+#### Category to Impact Mapping
+- **Technical** → Critical Impact (system down, critical functionality)
+- **Billing** → High Impact (financial impact, payment issues)
+- **Commercial** → Medium Impact (business operations affected)
+- **General/Support** → Low Impact (general inquiries, minor issues)
+
+#### Sentiment to Urgency Mapping
+- **Negative** → High Urgency (angry customers, urgent issues)
+- **Neutral** → Medium Urgency (standard requests)
+- **Positive** → Low Urgency (positive feedback, non-urgent)
+
+#### SLA Definitions
+- **Critical Priority**: 1 hour response time
+- **High Priority**: 4 hours response time
+- **Medium Priority**: 24 hours response time
+- **Low Priority**: 48 hours response time
+
+#### Automatic Priority Calculation
+1. **Ticket Creation**: AI classifies category and sentiment
+2. **Priority Calculation**: System applies ITIL matrix automatically
+3. **SLA Assignment**: Due date calculated based on priority
+4. **Re-calculation**: Priority updates automatically when ticket description changes
+
+#### Dashboard Analytics
+- Priority distribution charts
+- SLA compliance metrics (percentage on time)
+- Critical ticket alerts
+- SLA breach notifications
+- Real-time priority statistics
 
 ## Development
 
