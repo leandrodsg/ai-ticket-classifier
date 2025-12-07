@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Services\TicketClassifierService;
+use App\Services\SlaCalculatorService;
 use App\Http\Requests\StoreTicketRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class TicketController extends Controller
@@ -57,16 +59,26 @@ class TicketController extends Controller
     {
         $ticket = Ticket::create($request->validated());
 
-        // Classify ticket with AI
+        // Classify ticket with AI and calculate priority
         try {
             $classifier = app(TicketClassifierService::class);
-            $classification = $classifier->classify($ticket->description);
+            $classification = $classifier->classifyWithPriority($ticket->description);
 
-            // Update ticket with AI classification
+            // Calculate SLA due date
+            $slaCalculator = app(SlaCalculatorService::class);
+            $slaDueAt = isset($classification['priority'])
+                ? $slaCalculator->calculateDueDate($classification['priority'], $ticket->created_at)
+                : null;
+
+            // Update ticket with AI classification and priority
             $ticket->update([
                 'category' => $classification['category'],
                 'sentiment' => $classification['sentiment'],
                 'confidence' => $classification['confidence'],
+                'priority' => $classification['priority'] ?? null,
+                'impact_level' => $classification['impact_level'] ?? null,
+                'urgency_level' => $classification['urgency_level'] ?? null,
+                'sla_due_at' => $slaDueAt,
             ]);
 
             // Log the classification
@@ -80,7 +92,7 @@ class TicketController extends Controller
 
         } catch (\Exception $e) {
             // Log error but don't fail ticket creation
-            \Log::error('AI classification failed during ticket creation', [
+            Log::error('AI classification failed during ticket creation', [
                 'ticket_id' => $ticket->id,
                 'error' => $e->getMessage(),
             ]);
@@ -111,7 +123,49 @@ class TicketController extends Controller
      */
     public function update(StoreTicketRequest $request, Ticket $ticket): RedirectResponse
     {
+        $originalDescription = $ticket->description;
         $ticket->update($request->validated());
+
+        // Recalculate priority if description changed
+        if ($ticket->description !== $originalDescription) {
+            try {
+                $classifier = app(TicketClassifierService::class);
+                $classification = $classifier->classifyWithPriority($ticket->description);
+
+                // Calculate new SLA due date
+                $slaCalculator = app(SlaCalculatorService::class);
+                $slaDueAt = isset($classification['priority'])
+                    ? $slaCalculator->calculateDueDate($classification['priority'], $ticket->created_at)
+                    : null;
+
+                // Update ticket with new classification and priority
+                $ticket->update([
+                    'category' => $classification['category'],
+                    'sentiment' => $classification['sentiment'],
+                    'confidence' => $classification['confidence'],
+                    'priority' => $classification['priority'] ?? null,
+                    'impact_level' => $classification['impact_level'] ?? null,
+                    'urgency_level' => $classification['urgency_level'] ?? null,
+                    'sla_due_at' => $slaDueAt,
+                ]);
+
+                // Log the re-classification
+                $classifier->logClassification(
+                    $ticket->id,
+                    $ticket->description,
+                    $classification,
+                    $classification['processing_time_ms'] ?? null,
+                    'success'
+                );
+
+            } catch (\Exception $e) {
+                // Log error but don't fail ticket update
+                Log::error('AI re-classification failed during ticket update', [
+                    'ticket_id' => $ticket->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()->route('tickets.show', $ticket)
                         ->with('success', 'Ticket updated successfully!');
