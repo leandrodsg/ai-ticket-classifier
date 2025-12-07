@@ -97,6 +97,22 @@
                         </dd>
                     </div>
 
+                    <!-- Priority -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Priority</dt>
+                        <dd class="mt-1">
+                            @include('components.priority-badge', ['priority' => $ticket->priority])
+                        </dd>
+                    </div>
+
+                    <!-- SLA Status -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">SLA Status</dt>
+                        <dd class="mt-1">
+                            @include('components.sla-indicator', ['ticket' => $ticket])
+                        </dd>
+                    </div>
+
                     <!-- Created At -->
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Created</dt>

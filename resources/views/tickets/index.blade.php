@@ -84,6 +84,19 @@
                     </select>
                 </div>
 
+                <!-- Priority Filter -->
+                <div>
+                    <label for="priority_filter" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select id="priority_filter"
+                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                        <option value="">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+
                 <!-- Search -->
                 <div>
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -117,6 +130,9 @@
                                 Status
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Priority
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Created
                             </th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -143,6 +159,9 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @include('components.status-badge', ['status' => $ticket->status])
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @include('components.priority-badge', ['priority' => $ticket->priority])
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $ticket->created_at->format('M d, Y') }}
@@ -181,7 +200,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <div class="text-gray-500">
                                         <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
