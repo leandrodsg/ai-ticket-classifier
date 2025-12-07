@@ -18,6 +18,10 @@ class TicketSeeder extends Seeder
             'description' => 'Since the latest update, I cannot log into the system at all. The login button doesn\'t respond and I get a JavaScript error in the console. This is affecting my ability to work completely.',
             'category' => 'technical',
             'sentiment' => 'negative',
+            'priority' => 'critical',
+            'impact_level' => 'critical',
+            'urgency_level' => 'high',
+            'sla_due_at' => now()->addHour(),
             'status' => 'open',
         ]);
 
