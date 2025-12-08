@@ -14,23 +14,22 @@ class TicketModelTest extends TestCase
 
     public function test_ticket_has_fillable_attributes(): void
     {
+        // Test only fillable attributes (guarded ones are set by AI classification)
         $ticket = new Ticket([
             'title' => 'Test Title',
             'description' => 'Test Description',
-            'category' => 'technical',
-            'sentiment' => 'positive',
-            'confidence' => 0.95,
-            'priority' => 'high',
             'status' => 'open',
         ]);
 
         $this->assertEquals('Test Title', $ticket->title);
         $this->assertEquals('Test Description', $ticket->description);
-        $this->assertEquals('technical', $ticket->category);
-        $this->assertEquals('positive', $ticket->sentiment);
-        $this->assertEquals(0.95, $ticket->confidence);
-        $this->assertEquals('high', $ticket->priority);
         $this->assertEquals('open', $ticket->status);
+
+        // Guarded attributes should not be set via constructor
+        $this->assertNull($ticket->category);
+        $this->assertNull($ticket->sentiment);
+        $this->assertNull($ticket->confidence);
+        $this->assertNull($ticket->priority);
     }
 
     public function test_sla_due_at_is_cast_to_datetime(): void

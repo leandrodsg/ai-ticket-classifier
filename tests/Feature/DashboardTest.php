@@ -97,13 +97,13 @@ class DashboardTest extends TestCase
      */
     public function test_api_endpoint_has_rate_limiting(): void
     {
-        // Make 60 requests (should be ok)
-        for ($i = 0; $i < 60; $i++) {
+        // Make 30 requests (should be ok - matches throttle:30,1 limit)
+        for ($i = 0; $i < 30; $i++) {
             $response = $this->get('/api/dashboard/stats');
             $response->assertStatus(200);
         }
 
-        // 61st request should be rate limited
+        // 31st request should be rate limited
         $response = $this->get('/api/dashboard/stats');
         $response->assertStatus(429); // Too Many Requests
     }
