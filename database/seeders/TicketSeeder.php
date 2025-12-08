@@ -3,7 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Ticket;
+use App\Services\TicketClassifierService;
+use App\Services\SlaCalculatorService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
 class TicketSeeder extends Seeder
 {
@@ -12,16 +15,16 @@ class TicketSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create 25 sample tickets with realistic data
-        Ticket::factory()->create([
+        // Create 25 sample tickets with realistic data and AI classification
+        $this->createTicketWithAI([
             'title' => 'Login system completely broken',
             'description' => 'Since the latest update, I cannot log into the system at all. The login button doesn\'t respond and I get a JavaScript error in the console. This is affecting my ability to work completely.',
-            'category' => 'technical',
-            'sentiment' => 'negative',
-            'priority' => 'critical',
-            'impact_level' => 'critical',
-            'urgency_level' => 'high',
-            'sla_due_at' => now()->addHour(),
+            'status' => 'open',
+        ]);
+
+        $this->createTicketWithAI([
+            'title' => 'Need enterprise pricing information',
+            'description' => 'Our company is growing rapidly and we need to upgrade to the enterprise plan. Could you provide detailed pricing for 100+ users including all available features and support options?',
             'status' => 'open',
         ]);
 
@@ -235,5 +238,42 @@ class TicketSeeder extends Seeder
 
         // Generate 5 additional random tickets using the factory
         Ticket::factory(5)->create();
+    }
+
+    /**
+     * Create a ticket with automatic AI classification
+     */
+    private function createTicketWithAI(array $data): void
+    {
+        $ticket = Ticket::create($data);
+
+        try {
+            $classifier = app(TicketClassifierService::class);
+            $classification = $classifier->classifyWithPriority($ticket->description);
+
+            // Calculate SLA due date
+            $slaCalculator = app(SlaCalculatorService::class);
+            $slaDueAt = isset($classification['priority'])
+                ? $slaCalculator->calculateDueDate($classification['priority'], $ticket->created_at)
+                : null;
+
+            // Update ticket with AI classification and priority
+            $ticket->update([
+                'category' => $classification['category'],
+                'sentiment' => $classification['sentiment'],
+                'confidence' => $classification['confidence'],
+                'priority' => $classification['priority'] ?? null,
+                'impact_level' => $classification['impact_level'] ?? null,
+                'urgency_level' => $classification['urgency_level'] ?? null,
+                'sla_due_at' => $slaDueAt,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail seeding
+            Log::error('AI classification failed during seeding', [
+                'ticket_id' => $ticket->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

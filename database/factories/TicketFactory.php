@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Services\TicketClassifierService;
+use App\Services\SlaCalculatorService;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Ticket>
@@ -21,13 +24,51 @@ class TicketFactory extends Factory
         // Generate description based on category
         $description = $this->generateDescriptionForCategory($category);
 
-        return [
+        $data = [
             'title' => $this->generateTitleForCategory($category),
             'description' => $description,
             'category' => $category,
             'sentiment' => fake()->randomElement(['positive', 'negative', 'neutral']),
             'status' => fake()->randomElement(['open', 'closed', 'pending']),
         ];
+
+        // Try to classify with AI and add priority
+        try {
+            $classifier = app(TicketClassifierService::class);
+            $classification = $classifier->classifyWithPriority($description);
+
+            // Calculate SLA due date
+            $slaCalculator = app(SlaCalculatorService::class);
+            $slaDueAt = isset($classification['priority'])
+                ? $slaCalculator->calculateDueDate($classification['priority'], now())
+                : null;
+
+            // Merge AI classification data
+            $data = array_merge($data, [
+                'category' => $classification['category'],
+                'sentiment' => $classification['sentiment'],
+                'confidence' => $classification['confidence'],
+                'priority' => $classification['priority'] ?? null,
+                'impact_level' => $classification['impact_level'] ?? null,
+                'urgency_level' => $classification['urgency_level'] ?? null,
+                'sla_due_at' => $slaDueAt,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail factory creation
+            Log::error('AI classification failed during factory creation', [
+                'description' => $description,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Keep the manually set category and sentiment, but no priority
+            $data['priority'] = null;
+            $data['impact_level'] = null;
+            $data['urgency_level'] = null;
+            $data['sla_due_at'] = null;
+        }
+
+        return $data;
     }
 
     /**
