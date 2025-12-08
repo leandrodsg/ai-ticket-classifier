@@ -37,9 +37,12 @@ class TicketController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            // Sanitize search input to prevent LIKE injection
+            $searchTerm = str_replace(['%', '_'], ['\%', '\_'], $request->search);
+
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('description', 'like', '%' . $searchTerm . '%');
             });
         }
 
