@@ -26,7 +26,7 @@ class StoreTicketRequest extends FormRequest
 
         return [
             'title' => 'required|string|min:5|max:255',
-            'description' => 'required|string|min:10|max:5000',
+            'description' => 'required|string|min:10|max:2000',
             'category' => 'nullable|string|max:100|in:' . $validCategories,
             'sentiment' => 'nullable|string|in:' . $validSentiments,
             'status' => 'nullable|string|in:open,closed,pending',
@@ -41,7 +41,7 @@ class StoreTicketRequest extends FormRequest
             'title.max' => 'The title may not be greater than 255 characters.',
             'description.required' => 'The description field is required.',
             'description.min' => 'The description must be at least 10 characters.',
-            'description.max' => 'The description may not be greater than 5000 characters.',
+            'description.max' => 'The description may not be greater than 2000 characters.',
             'category.max' => 'The category may not be greater than 100 characters.',
             'sentiment.in' => 'The selected sentiment is invalid.',
             'status.in' => 'The selected status is invalid.',

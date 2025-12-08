@@ -396,7 +396,7 @@ class TicketClassifierService
     }
 
     /**
-     * Log AI classification to database.
+     * Log AI classification to database (sanitized for privacy).
      *
      * @param int $ticketId
      * @param string $prompt
@@ -414,11 +414,19 @@ class TicketClassifierService
         string $status = 'success',
         ?string $errorMessage = null
     ): AiLog {
+        // Sanitize sensitive data for privacy
+        $sanitizedResponse = $response;
+        unset($sanitizedResponse['reasoning']); // Remove potentially sensitive reasoning
+
+        // Hash the prompt for privacy (keep length for analysis)
+        $promptHash = hash('sha256', $prompt);
+        $promptLength = strlen($prompt);
+
         return AiLog::create([
             'ticket_id' => $ticketId,
             'model' => $response['model'] ?? config('ai.openrouter.model'),
-            'prompt' => $prompt,
-            'response' => $response,
+            'prompt' => "hashed:{$promptHash}:{$promptLength}", // Store hash instead of raw text
+            'response' => $sanitizedResponse,
             'confidence' => $response['confidence'] ?? null,
             'processing_time_ms' => $processingTime,
             'status' => $status,

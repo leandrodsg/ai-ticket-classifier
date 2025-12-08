@@ -14,6 +14,10 @@ class Ticket extends Model
     protected $fillable = [
         'title',
         'description',
+        'status',
+    ];
+
+    protected $guarded = [
         'category',
         'sentiment',
         'confidence',
@@ -22,7 +26,6 @@ class Ticket extends Model
         'impact_level',
         'urgency_level',
         'escalated_at',
-        'status',
         'ai_classification_log',
     ];
 
