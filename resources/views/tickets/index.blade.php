@@ -46,64 +46,78 @@
 
         <!-- Filters -->
         <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <!-- Category Filter -->
-                <div>
-                    <label for="category_filter" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select id="category_filter"
-                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                        <option value="">All Categories</option>
-                        <option value="technical">Technical</option>
-                        <option value="commercial">Commercial</option>
-                        <option value="billing">Billing</option>
-                        <option value="general">General</option>
-                    </select>
+            <div class="flex flex-col space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Category Filter -->
+                    <div>
+                        <label for="category_filter" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select id="category_filter"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                            <option value="">All Categories</option>
+                            <option value="technical">Technical</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="billing">Billing</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+
+                    <!-- Sentiment Filter -->
+                    <div>
+                        <label for="sentiment_filter" class="block text-sm font-medium text-gray-700 mb-1">Sentiment</label>
+                        <select id="sentiment_filter"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                            <option value="">All Sentiments</option>
+                            <option value="positive">Positive</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negative</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div>
+                        <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="status_filter"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                            <option value="">All Status</option>
+                            <option value="open">Open</option>
+                            <option value="pending">Pending</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <!-- Priority Filter -->
+                    <div>
+                        <label for="priority_filter" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select id="priority_filter"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                            <option value="">All Priorities</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text"
+                               id="search"
+                               placeholder="Search tickets..."
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
                 </div>
 
-                <!-- Sentiment Filter -->
-                <div>
-                    <label for="sentiment_filter" class="block text-sm font-medium text-gray-700 mb-1">Sentiment</label>
-                    <select id="sentiment_filter"
-                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                        <option value="">All Sentiments</option>
-                        <option value="positive">Positive</option>
-                        <option value="neutral">Neutral</option>
-                        <option value="negative">Negative</option>
-                    </select>
-                </div>
-
-                <!-- Status Filter -->
-                <div>
-                    <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select id="status_filter"
-                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                        <option value="">All Status</option>
-                        <option value="open">Open</option>
-                        <option value="pending">Pending</option>
-                        <option value="closed">Closed</option>
-                    </select>
-                </div>
-
-                <!-- Priority Filter -->
-                <div>
-                    <label for="priority_filter" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                    <select id="priority_filter"
-                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                        <option value="">All Priorities</option>
-                        <option value="critical">Critical</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                </div>
-
-                <!-- Search -->
-                <div>
-                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                    <input type="text"
-                           id="search"
-                           placeholder="Search tickets..."
-                           class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                <!-- Apply Filters Button -->
+                <div class="flex justify-center lg:justify-end">
+                    <button type="button"
+                            id="apply_filters"
+                            class="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        Apply Filters
+                    </button>
                 </div>
             </div>
         </div>
@@ -278,4 +292,45 @@
             </div>
         @endif
     </div>
+
+    <!-- Filter JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const applyFiltersBtn = document.getElementById('apply_filters');
+
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', function() {
+                    // Get filter values
+                    const category = document.getElementById('category_filter').value;
+                    const sentiment = document.getElementById('sentiment_filter').value;
+                    const status = document.getElementById('status_filter').value;
+                    const priority = document.getElementById('priority_filter').value;
+                    const search = document.getElementById('search').value.trim();
+
+                    // Build query parameters
+                    const params = new URLSearchParams();
+
+                    if (category) params.append('category', category);
+                    if (sentiment) params.append('sentiment', sentiment);
+                    if (status) params.append('status', status);
+                    if (priority) params.append('priority', priority);
+                    if (search) params.append('search', search);
+
+                    // Redirect with filters
+                    const url = '{{ route("tickets.index") }}' + (params.toString() ? '?' + params.toString() : '');
+                    window.location.href = url;
+                });
+            }
+
+            // Allow pressing Enter in search field to apply filters
+            const searchInput = document.getElementById('search');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        applyFiltersBtn.click();
+                    }
+                });
+            }
+        });
+    </script>
 @endsection

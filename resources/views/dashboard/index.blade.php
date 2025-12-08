@@ -97,10 +97,43 @@
             <!-- Categories Donut Chart -->
             <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-6">Tickets by Category</h3>
-                <div class="relative">
-                    <canvas id="categoriesChart" width="300" height="300"></canvas>
+
+                <!-- Simple Bar Chart -->
+                @if($ticketsByCategory->isNotEmpty())
+                <div class="space-y-3 mb-4">
+                    @php
+                        $total = $ticketsByCategory->sum('count');
+                        $maxCount = $ticketsByCategory->max('count');
+                        $colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+                    @endphp
+                    @foreach($ticketsByCategory as $index => $item)
+                        @php
+                            $percentage = $total > 0 ? ($item->count / $total) * 100 : 0;
+                            $barWidth = $maxCount > 0 ? ($item->count / $maxCount) * 100 : 0;
+                            $color = $colors[$index % 5];
+                        @endphp
+                        <div class="flex items-center space-x-3">
+                            <div class="w-16 text-xs font-medium text-gray-600 capitalize truncate">
+                                {{ $item->category }}
+                            </div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4">
+                                <div class="h-4 rounded-full transition-all duration-500"
+                                     style="width: {{ $barWidth }}%;
+                                            background-color: {{ $color }};">
+                                </div>
+                            </div>
+                            <div class="w-8 text-xs font-medium text-gray-900 text-right">
+                                {{ $item->count }}
+                            </div>
+                            <div class="w-12 text-xs text-gray-500 text-right">
+                                {{ number_format($percentage, 1) }}%
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="mt-4 space-y-2">
+                @endif
+
+                <div class="space-y-2">
                     @foreach($ticketsByCategory as $index => $item)
                         <div class="flex justify-between items-center">
                             <div class="flex items-center">
@@ -111,7 +144,14 @@
                         </div>
                     @endforeach
                     @if($ticketsByCategory->isEmpty())
-                        <p class="text-sm text-gray-500">No categorized tickets yet</p>
+                        <div class="text-center py-8">
+                            <div class="text-gray-400 mb-2">
+                                <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-sm text-gray-500">No categorized tickets yet</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -226,49 +266,5 @@
         </div>
     </div>
 
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Initialize Chart.js donut chart for categories
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('categoriesChart');
-            if (ctx) {
-                const categoriesData = @json($ticketsByCategory);
-                const labels = categoriesData.map(item => item.category.charAt(0).toUpperCase() + item.category.slice(1));
-                const data = categoriesData.map(item => item.count);
-                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
 
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: colors.slice(0, data.length),
-                            borderWidth: 0,
-                            hoverBorderWidth: 2,
-                            hoverBorderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.label + ': ' + context.parsed + ' tickets';
-                                    }
-                                }
-                            }
-                        },
-                        cutout: '70%'
-                    }
-                });
-            }
-        });
-    </script>
 @endsection

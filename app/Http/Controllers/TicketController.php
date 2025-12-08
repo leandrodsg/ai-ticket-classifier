@@ -32,6 +32,10 @@ class TicketController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -123,23 +127,27 @@ class TicketController extends Controller
      */
     public function update(StoreTicketRequest $request, Ticket $ticket): RedirectResponse
     {
+        $ticketId = $ticket->id;
         $originalDescription = $ticket->description;
-        $ticket->update($request->validated());
+        $validatedData = $request->validated();
+
+        // Prepare update data with validated input
+        $updateData = $validatedData;
 
         // Recalculate priority if description changed
-        if ($ticket->description !== $originalDescription) {
+        if ($validatedData['description'] !== $originalDescription) {
             try {
                 $classifier = app(TicketClassifierService::class);
-                $classification = $classifier->classifyWithPriority($ticket->description);
+                $classification = $classifier->classifyWithPriority($validatedData['description']);
 
                 // Calculate new SLA due date
                 $slaCalculator = app(SlaCalculatorService::class);
                 $slaDueAt = isset($classification['priority'])
-                    ? $slaCalculator->calculateDueDate($classification['priority'], $ticket->created_at)
+                    ? $slaCalculator->calculateDueDate($classification['priority'], $ticket->created_at ?? now())
                     : null;
 
-                // Update ticket with new classification and priority
-                $ticket->update([
+                // Merge AI classification data
+                $updateData = array_merge($updateData, [
                     'category' => $classification['category'],
                     'sentiment' => $classification['sentiment'],
                     'confidence' => $classification['confidence'],
@@ -149,25 +157,41 @@ class TicketController extends Controller
                     'sla_due_at' => $slaDueAt,
                 ]);
 
-                // Log the re-classification
-                $classifier->logClassification(
-                    $ticket->id,
-                    $ticket->description,
-                    $classification,
-                    $classification['processing_time_ms'] ?? null,
-                    'success'
-                );
+                // Store classification for logging after update
+                $classificationToLog = $classification;
 
             } catch (\Exception $e) {
                 // Log error but don't fail ticket update
                 Log::error('AI re-classification failed during ticket update', [
                     'ticket_id' => $ticket->id,
                     'error' => $e->getMessage(),
+                    'error_type' => get_class($e)
                 ]);
             }
         }
 
-        return redirect()->route('tickets.show', $ticket)
+        // Single update call with all data
+        $ticket->update($updateData);
+
+        // Log classification after update (if it was performed)
+        if (isset($classificationToLog)) {
+            try {
+                $classifier->logClassification(
+                    $ticketId,
+                    $validatedData['description'],
+                    $classificationToLog,
+                    $classificationToLog['processing_time_ms'] ?? null,
+                    'success'
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to log classification', [
+                    'ticket_id' => $ticketId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->route('tickets.show', $ticketId)
                         ->with('success', 'Ticket updated successfully!');
     }
 

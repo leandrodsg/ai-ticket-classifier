@@ -48,11 +48,13 @@ class TestAiClassification extends Command
         $startTime = microtime(true);
 
         try {
+            // Test both basic classification and classification with priority
             $result = $service->classify($description);
+            $resultWithPriority = $service->classifyWithPriority($description);
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->line('');
-            $this->info("✅ Classification Result:");
+            $this->info("✅ Basic Classification Result:");
             $this->table(
                 ['Field', 'Value'],
                 [
@@ -62,6 +64,21 @@ class TestAiClassification extends Command
                     ['Model', $result['model'] ?? 'N/A'],
                     ['Processing Time', "{$processingTime}ms"],
                     ['Reasoning', $result['reasoning'] ?? 'N/A'],
+                ]
+            );
+
+            $this->line('');
+            $this->info("🎯 Classification with Priority Result:");
+            $this->table(
+                ['Field', 'Value'],
+                [
+                    ['Category', $resultWithPriority['category'] ?? 'N/A'],
+                    ['Sentiment', $resultWithPriority['sentiment'] ?? 'N/A'],
+                    ['Priority', $resultWithPriority['priority'] ?? 'NULL'],
+                    ['Impact Level', $resultWithPriority['impact_level'] ?? 'NULL'],
+                    ['Urgency Level', $resultWithPriority['urgency_level'] ?? 'NULL'],
+                    ['Confidence', isset($resultWithPriority['confidence']) ? number_format($resultWithPriority['confidence'], 3) : 'N/A'],
+                    ['Model', $resultWithPriority['model'] ?? 'N/A'],
                 ]
             );
 
