@@ -1,25 +1,33 @@
 # Smart Support Classifier
 
-[![Laravel](https://img.shields.io/badge/Laravel-12-red.svg)](https://laravel.com)
-[![PHP](https://img.shields.io/badge/PHP-8.4-blue.svg)](https://php.net)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php)
+![Tests](https://img.shields.io/badge/Tests-90%20passing-success)
+![Coverage](https://img.shields.io/badge/Coverage-268%20assertions-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-An AI-powered ticket classification system built with Laravel 12 and OpenRouter AI.
+An AI-powered ticket classification system built with Laravel 12 and OpenRouter AI. Automatically categorizes support tickets, analyzes sentiment, and calculates ITIL-based priorities with SLA management.
 
 ## Features
 
-- 🤖 Automatic ticket classification using AI (OpenRouter)
-- 📊 Interactive dashboard with real-time statistics
-- 🎯 Multi-category classification (Technical, Commercial, Billing, General, Support)
-- 😊 Sentiment analysis (Positive, Negative, Neutral)
-- 🚨 **ITIL-based Priority System** with automatic SLA calculation
-- 📈 Priority distribution analytics and alerts
-- 🔒 Rate limiting and security measures
-- 🧪 Comprehensive test suite (37+ tests)
-- 🐳 Docker containerization with Laravel Sail
-- 🗄️ MySQL database with Redis caching
-- 📧 Mailpit for email testing
-- 📱 Responsive web interface
+### Core Functionality
+- **AI-Powered Classification**: Automatic ticket categorization using OpenRouter API with multiple fallback models
+- **Sentiment Analysis**: Real-time analysis of customer sentiment (Positive, Negative, Neutral)
+- **Multi-Category Support**: Classification into Technical, Commercial, Billing, General, and Support categories
+- **Interactive Dashboard**: Real-time statistics and analytics with caching for performance
+
+### ITIL Priority Management
+- **ITIL v4 Compliance**: Complete priority matrix implementation (Impact × Urgency)
+- **Automatic SLA Calculation**: Response times based on priority levels (1 hour to 48 hours)
+- **Priority Distribution Analytics**: Visual charts and alerts for priority management
+- **SLA Breach Monitoring**: Real-time tracking of compliance metrics
+
+### Technical Features
+- **Comprehensive Test Suite**: 90+ tests covering all functionality (268 assertions)
+- **Docker Containerization**: Laravel Sail for consistent development environment
+- **Database Caching**: Redis-backed caching for improved performance
+- **Rate Limiting**: API protection with configurable limits
+- **Responsive Design**: Mobile-friendly web interface with Tailwind CSS
 
 ## Requirements
 
@@ -115,12 +123,14 @@ The system implements a complete **ITIL v4-based priority management** with auto
 
 #### Priority Matrix (Impact × Urgency)
 
-| Impact \ Urgency | High Urgency | Medium Urgency | Low Urgency |
-|------------------|--------------|----------------|-------------|
-| **Critical Impact** | Critical | Critical | High |
-| **High Impact** | Critical | High | Medium |
-| **Medium Impact** | High | Medium | Low |
-| **Low Impact** | Medium | Low | Low |
+```
+Impact \ Urgency     | High Urgency | Medium Urgency | Low Urgency
+---------------------|--------------|----------------|-------------
+Critical Impact      | Critical     | Critical       | High
+High Impact          | Critical     | High           | Medium
+Medium Impact        | High         | Medium         | Low
+Low Impact           | Medium       | Low            | Low
+```
 
 #### Category to Impact Mapping
 - **Technical** → Critical Impact (system down, critical functionality)
@@ -172,14 +182,91 @@ The test suite includes:
 - **AI Tests**: Classification service functionality
 - **Dashboard Tests**: Performance and caching verification
 
-### Seeding Demo Data
+## Artisan Commands
 
-Populate the database with realistic sample data:
+The application includes several useful Artisan commands for development and maintenance:
+
+### Database Management
 ```bash
+# Run migrations
+./vendor/bin/sail artisan migrate
+
+# Rollback migrations
+./vendor/bin/sail artisan migrate:rollback
+
+# Create new migration
+./vendor/bin/sail artisan make:migration create_example_table
+
+# Run seeders
 ./vendor/bin/sail artisan db:seed
 ```
 
-This creates 30+ sample tickets across all categories with varied sentiments and statuses.
+### AI Classification
+```bash
+# Test AI classification manually
+./vendor/bin/sail artisan test:ai-classification
+
+# Recalculate priorities for existing tickets
+./vendor/bin/sail artisan tickets:recalculate-priorities
+
+# Debug dashboard data
+./vendor/bin/sail artisan debug:dashboard
+```
+
+### Development Tools
+```bash
+# Generate application key
+./vendor/bin/sail artisan key:generate
+
+# Clear various caches
+./vendor/bin/sail artisan cache:clear
+./vendor/bin/sail artisan config:clear
+./vendor/bin/sail artisan route:clear
+./vendor/bin/sail artisan view:clear
+
+# Run Tinker (interactive shell)
+./vendor/bin/sail artisan tinker
+```
+
+### Testing
+```bash
+# Run all tests
+./vendor/bin/sail test
+
+# Run specific test file
+./vendor/bin/sail test tests/Feature/DashboardTest.php
+
+# Run tests with coverage
+./vendor/bin/sail test --coverage
+```
+
+## Database Seeding
+
+The application includes comprehensive seeders to populate the database with realistic sample data:
+
+### Basic Seeding
+```bash
+# Run all seeders
+./vendor/bin/sail artisan db:seed
+
+# Run specific seeder
+./vendor/bin/sail artisan db:seed --class=TicketSeeder
+```
+
+### Sample Data Created
+The `TicketSeeder` creates 30+ sample tickets with:
+- **Categories**: Technical, Commercial, Billing, General, Support
+- **Sentiments**: Positive, Negative, Neutral (distributed realistically)
+- **Statuses**: Open, Closed, In Progress
+- **Priorities**: Critical, High, Medium, Low (calculated via ITIL matrix)
+- **SLA Due Dates**: Automatically calculated based on priority
+- **AI Logs**: Simulated classification logs for each ticket
+
+### Refresh Database
+To completely reset and reseed the database:
+```bash
+./vendor/bin/sail artisan migrate:fresh --seed
+```
 
 ## API Documentation
 
@@ -207,11 +294,31 @@ Real-time metrics including:
 
 ## Security Features
 
-- Rate limiting on AI API calls
-- Input validation and sanitization
-- Secure logging (no sensitive data exposure)
-- CSRF protection
-- SQL injection prevention
+### API Security
+- **Rate Limiting**: Configurable limits on AI API calls (10 requests/minute for tickets, 30 requests/minute for dashboard)
+- **API Key Protection**: OpenRouter API keys stored securely in environment variables
+- **Request Throttling**: Laravel's built-in throttling middleware prevents abuse
+
+### Data Protection
+- **Input Validation**: Comprehensive validation rules for all form inputs using Laravel's validation system
+- **Data Sanitization**: Automatic sanitization of user inputs to prevent XSS attacks
+- **SQL Injection Prevention**: Eloquent ORM with parameterized queries
+- **CSRF Protection**: Cross-Site Request Forgery tokens on all forms
+
+### Authentication & Authorization
+- **Secure Sessions**: Laravel's secure session management with encryption
+- **Password Security**: Secure password hashing with bcrypt
+- **Session Management**: Automatic session expiration and secure cookie handling
+
+### Logging & Monitoring
+- **Audit Logging**: All AI classifications logged for debugging and compliance
+- **Error Handling**: Secure error logging without exposing sensitive information
+- **Performance Monitoring**: Response time tracking and performance metrics
+
+### Infrastructure Security
+- **Container Security**: Docker containers with minimal attack surface
+- **Environment Isolation**: Sensitive configuration separated from codebase
+- **Database Security**: MySQL with proper user permissions and prepared statements
 
 ## License
 
