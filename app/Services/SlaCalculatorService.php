@@ -120,7 +120,15 @@ class SlaCalculatorService
             ];
         }
 
-        $totalDuration = $slaDueAt->diffInHours($ticket->created_at ?? now()->subHours(1));
+        // Get created_at (handle both object and array)
+        $createdAt = is_object($ticket) ? $ticket->created_at : ($ticket['created_at'] ?? null);
+        if (!$createdAt) {
+            $createdAt = now()->subHours(1);
+        } elseif (!$createdAt instanceof Carbon) {
+            $createdAt = Carbon::parse($createdAt);
+        }
+
+        $totalDuration = $createdAt->diffInHours($slaDueAt);
         $remainingHours = $now->diffInHours($slaDueAt, false); // false = positive for future dates
         $remainingPercentage = $totalDuration > 0 ? ($remainingHours / $totalDuration) * 100 : 0;
 
@@ -165,5 +173,18 @@ class SlaCalculatorService
         if (!in_array($priority, $validPriorities)) {
             throw new \InvalidArgumentException("Invalid priority level: {$priority}. Valid: " . implode(', ', $validPriorities));
         }
+    }
+
+    /**
+     * Get SLA hours for a priority level.
+     *
+     * @param string $priority
+     * @return int
+     * @throws \InvalidArgumentException
+     */
+    public function getSlaHours(string $priority): int
+    {
+        $this->validatePriority($priority);
+        return config('priority.slas')[$priority];
     }
 }

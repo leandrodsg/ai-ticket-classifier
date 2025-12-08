@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiLog extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'ticket_id',
         'model',
@@ -20,7 +23,7 @@ class AiLog extends Model
 
     protected $casts = [
         'response' => 'array',
-        'confidence' => 'decimal:2',
+        'confidence' => 'decimal:3',
         'processing_time_ms' => 'integer',
     ];
 

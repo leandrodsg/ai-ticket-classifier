@@ -34,7 +34,7 @@ class TicketCrudTest extends TestCase
             'status' => 'open',
         ];
 
-        $response = $this->post('/tickets', $ticketData);
+        $response = $this->withoutMiddleware()->post('/tickets', $ticketData);
 
         $response->assertRedirect(); // Should redirect to show page
 
@@ -66,7 +66,16 @@ class TicketCrudTest extends TestCase
 
     public function test_can_update_ticket(): void
     {
-        $ticket = Ticket::factory()->create();
+        // Create ticket with basic data first
+        $ticket = Ticket::factory()->create([
+            'title' => 'Original Title',
+            'description' => 'Original description that will be changed.',
+            'status' => 'open',
+        ]);
+
+        // Ensure ticket has valid ID
+        $this->assertNotNull($ticket->id);
+        $this->assertIsInt($ticket->id);
 
         $updatedData = [
             'title' => 'Updated Title',

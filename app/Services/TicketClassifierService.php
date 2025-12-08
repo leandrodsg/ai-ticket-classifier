@@ -20,15 +20,13 @@ class TicketClassifierService
      */
     public function classify(string $description): array
     {
-        // Check if always use mock mode
         if (config('ai.global.always_use_mock')) {
             Log::info('Using mock classification (forced by config)');
             return $this->mockClassify($description);
         }
 
-        // Use OpenRouter as the ONLY AI provider (no DeepSeek fallback)
         try {
-            Log::info('Using OpenRouter AI provider (only provider)');
+            Log::info('Using OpenRouter AI provider');
             $result = $this->classifyWithOpenRouter($description);
             Log::info('OpenRouter AI provider succeeded');
             return $result;
@@ -37,7 +35,6 @@ class TicketClassifierService
                 'error' => $e->getMessage()
             ]);
 
-            // Fallback to mock classification
             return $this->mockClassify($description);
         }
     }
@@ -51,10 +48,8 @@ class TicketClassifierService
      */
     public function classifyWithPriority(string $description): array
     {
-        // First, get the basic classification
         $classification = $this->classify($description);
 
-        // Then calculate priority using the priority service
         try {
             $priorityService = app(PriorityCalculatorService::class);
             $priorityData = $priorityService->calculateFromCategoryAndSentiment(
@@ -62,7 +57,6 @@ class TicketClassifierService
                 $classification['sentiment']
             );
 
-            // Merge priority data with classification
             $classification = array_merge($classification, $priorityData);
 
             Log::info('Priority calculated successfully', [
@@ -80,7 +74,6 @@ class TicketClassifierService
                 'sentiment' => $classification['sentiment']
             ]);
 
-            // Add default values if priority calculation fails
             $classification['priority'] = null;
             $classification['impact_level'] = null;
             $classification['urgency_level'] = null;
@@ -110,7 +103,6 @@ class TicketClassifierService
 
         $models = $providerConfig['models'] ?? ['meta-llama/llama-3.2-3b-instruct:free'];
 
-        // Try each model in sequence until one works
         foreach ($models as $model) {
             try {
                 Log::info('Trying OpenRouter model', ['model' => $model]);
@@ -127,7 +119,6 @@ class TicketClassifierService
             }
         }
 
-        // All models failed
         throw new \Exception("All OpenRouter models failed");
     }
 
@@ -227,16 +218,10 @@ class TicketClassifierService
     {
         $lower = strtolower($description);
 
-        // Category detection based on keywords
         $category = $this->detectCategory($lower);
-
-        // Sentiment analysis
         $sentiment = $this->detectSentiment($lower);
-
-        // Generate confidence based on keyword matches
         $confidence = $this->calculateConfidence($lower);
 
-        // Calculate priority using the priority service
         $priorityData = [];
         try {
             $priorityService = app(PriorityCalculatorService::class);
@@ -353,49 +338,35 @@ class TicketClassifierService
      */
     protected function detectCategory(string $text): string
     {
-        // Technical keywords - highest priority
         if (preg_match('/\b(bug|error|crash|fail|broken|not working|doesn\'?t work|system|software|application|database|server|login|export|import|upload|download)\b/i', $text)) {
             return 'technical';
         }
 
-        // Commercial keywords
         if (preg_match('/\b(price|cost|buy|purchase|plan|subscription|quote|pricing|enterprise|pro|premium)\b/i', $text)) {
             return 'commercial';
         }
 
-        // Billing keywords
         if (preg_match('/\b(bill|invoice|payment|charge|refund|money|billing|account|subscription|cancel|renew)\b/i', $text)) {
             return 'billing';
         }
 
-        // General support keywords (default)
         if (preg_match('/\b(help|support|question|how|what|when|where|why|assistance|guide|tutorial|manual)\b/i', $text)) {
             return 'general';
         }
 
-        // Default to support for anything else
         return 'support';
     }
 
-    /**
-     * Detect sentiment based on keywords.
-     *
-     * @param string $text
-     * @return string
-     */
     protected function detectSentiment(string $text): string
     {
-        // Negative keywords
         if (preg_match('/\b(urgent|problem|issue|frustrated|angry|disappointed|terrible|awful)\b/i', $text)) {
             return 'negative';
         }
 
-        // Positive keywords
         if (preg_match('/\b(thank|great|excellent|amazing|happy|pleased|awesome|love)\b/i', $text)) {
             return 'positive';
         }
 
-        // Neutral (default)
         return 'neutral';
     }
 
@@ -410,14 +381,12 @@ class TicketClassifierService
         $matches = 0;
         $total = 0;
 
-        // Category keywords
         $total += 4;
         if (preg_match('/\b(bug|error|crash|fail|broken|not working)\b/i', $text)) $matches++;
         if (preg_match('/\b(price|cost|buy|purchase|plan)\b/i', $text)) $matches++;
         if (preg_match('/\b(bill|invoice|payment|charge)\b/i', $text)) $matches++;
         if (preg_match('/\b(help|support|question|how|what)\b/i', $text)) $matches++;
 
-        // Sentiment keywords
         $total += 3;
         if (preg_match('/\b(urgent|problem|issue|frustrated|angry)\b/i', $text)) $matches++;
         if (preg_match('/\b(thank|great|excellent|amazing|happy)\b/i', $text)) $matches++;
